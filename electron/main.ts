@@ -18,6 +18,8 @@ import {
 	Tray,
 } from "electron";
 import { RECORDINGS_DIR } from "./appPaths";
+import { createAgentEventIngestionServer, type AgentEventIngestionServer } from "./agent-events/server";
+import { createAgentEventSessionStore, type AgentEventSessionStore } from "./agent-events/sessionStore";
 import { createAuthCallbackController } from "./authCallback";
 import { showCursor } from "./cursorHider";
 import { getGpuSwitches } from "./gpuSwitches";
@@ -183,6 +185,8 @@ let isForceClosing = false;
 let isAppQuitting = false;
 let isCreatingMainWindow = false;
 let isCreatingEditorWindow = false;
+let agentEventStore: AgentEventSessionStore | null = null;
+let agentEventServer: AgentEventIngestionServer | null = null;
 const shouldEnforceSingleInstanceLock = !IS_DEV;
 const hasSingleInstanceLock = shouldEnforceSingleInstanceLock
 	? app.requestSingleInstanceLock()
@@ -906,6 +910,32 @@ app.on("second-instance", (_event, commandLine) => {
 
 // Register all IPC handlers when app is ready
 app.whenReady().then(async () => {
+	const agentEventsDir = path.join(app.getPath("userData"), "agent-events");
+	agentEventStore = createAgentEventSessionStore({ dir: agentEventsDir });
+	agentEventServer = createAgentEventIngestionServer({
+		store: agentEventStore,
+		port: 0,
+		token: process.env.AGENT_RECORDER_EVENT_TOKEN,
+		logger: (message) => console.warn(`[agent-events] ${message}`),
+		onEvents: (events) => {
+			for (const window of BrowserWindow.getAllWindows()) {
+				if (!window.isDestroyed()) window.webContents.send("agent-event", events);
+			}
+		},
+	});
+	await agentEventServer.start();
+	ipcMain.handle("agent-events:get-status", () => {
+		const address = agentEventServer?.address();
+		return { running: Boolean(address), url: agentEventServer?.url() ?? null, port: address?.port ?? null, tokenConfigured: Boolean(process.env.AGENT_RECORDER_EVENT_TOKEN), storagePath: agentEventsDir };
+	});
+	ipcMain.handle("agent-events:read", async (_event, sessionId: unknown) => {
+		if (typeof sessionId !== "string" || sessionId.trim().length === 0 || sessionId.length > 128) throw new Error("Invalid session id");
+		return agentEventStore?.read(sessionId) ?? [];
+	});
+	app.once("before-quit", () => {
+		void agentEventServer?.stop();
+		void agentEventStore?.close();
+	});
 	authCallbacks.startDevServer();
 	if (process.defaultApp && process.argv[1]) {
 		app.setAsDefaultProtocolClient(authCallbacks.protocol, process.execPath, [
@@ -918,7 +948,7 @@ app.whenReady().then(async () => {
 	if (startupAuthCallback) authCallbacks.dispatch(startupAuthCallback);
 
 	if (process.platform === "win32") {
-		app.setAppUserModelId("dev.recordly.app");
+		app.setAppUserModelId("pl.aievolution.agentrecorder");
 	}
 
 	session.defaultSession.setPermissionCheckHandler(

@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type { RecordingSessionData } from "./ipc/types";
+import type { AgentEvent } from "./agent-events/schema";
 
 type NativeVideoExportWriteResult = { success: boolean; error?: string };
 type NativeVideoAudioMuxMetrics = {
@@ -184,6 +185,15 @@ function settleNativeVideoExportPendingRequests(
 }
 
 contextBridge.exposeInMainWorld("electronAPI", {
+	getAgentEventStatus: () => ipcRenderer.invoke("agent-events:get-status"),
+	readAgentEvents: (sessionId: string) => ipcRenderer.invoke("agent-events:read", sessionId),
+	onAgentEvent: (callback: (event: AgentEvent) => void) => {
+		const listener = (_event: Electron.IpcRendererEvent, events: AgentEvent[]) => {
+			for (const event of events) callback(event);
+		};
+		ipcRenderer.on("agent-event", listener);
+		return () => ipcRenderer.removeListener("agent-event", listener);
+	},
 	hudOverlaySetIgnoreMouse: (ignore: boolean) => {
 		ipcRenderer.send("hud-overlay-set-ignore-mouse", ignore);
 	},
