@@ -218,6 +218,9 @@ interface RendererExportHardwareInfo {
 
 interface Window {
 	electronAPI: {
+		getAgentEventStatus: () => Promise<import("../src/features/agent-session/protocol").AgentEventReceiverStatus>;
+		readAgentEvents: (sessionId: string) => Promise<import("../src/features/agent-session/protocol").AgentEventRecord[]>;
+		onAgentEvent: (callback: (event: import("../src/features/agent-session/protocol").AgentEventRecord) => void) => () => void;
 		hudOverlaySetIgnoreMouse: (ignore: boolean) => void;
 		hudOverlaySetSourceSelectionActive: (active: boolean) => void;
 		hudOverlayDrag: (phase: "start" | "move" | "end", screenX: number, screenY: number) => void;

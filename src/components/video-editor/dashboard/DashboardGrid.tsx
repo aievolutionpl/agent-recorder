@@ -13,6 +13,8 @@ import { ProjectCard } from "./ProjectCard";
 import type { DashboardProps } from "./types";
 
 import type { DashboardModel } from "./useDashboardModel";
+import { AgentSession } from "@/components/agent-session/agent-session";
+import { useAgentSession } from "@/features/agent-session/use-agent-session";
 
 export function DashboardGrid({
 	onImportFile,
@@ -76,9 +78,11 @@ export function DashboardGrid({
 	| "deleteEntries"
 	| "run"
 >) {
+	const agentSession = useAgentSession();
 	return (
 		<>
 			<main className="custom-scrollbar min-h-0 flex-1 overflow-y-auto px-7 pb-10 lg:px-10">
+				{section === "projects" && <div className="mx-auto mb-8 max-w-5xl pt-6"><AgentSession sessionId="live" title="Agent Session" status={agentSession.status?.running ? "recording" : "connecting"} entries={agentSession.entries} elapsedMs={agentSession.elapsedMs} provider="Local receiver" privacy="redacted" endpoint={agentSession.status?.url ?? undefined} /></div>}
 				{error && (
 					<p role="alert" className="mb-4 text-sm text-danger">
 						{error}

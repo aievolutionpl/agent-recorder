@@ -1,17 +1,17 @@
 {
-	"name": "recordly",
-	"productName": "Recordly",
-	"description": "A free, creator-focused screen recorder with auto-zoom, cursor effects, backgrounds, annotations, and more - built for polished videos out of the box.",
-	"author": "webadderall",
-	"homepage": "https://github.com/webadderallorg/Recordly",
+	"name": "agent-recorder",
+	"productName": "Agent Recorder",
+	"description": "Windows-first open-source screen recorder with a local AI agent event timeline.",
+	"author": "AI Evolution Polska",
+	"homepage": "https://github.com/aievolutionpl/agent-recorder",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/webadderallorg/Recordly.git"
+		"url": "https://github.com/aievolutionpl/agent-recorder.git"
 	},
 	"bugs": {
-		"url": "https://github.com/webadderallorg/Recordly/issues"
+		"url": "https://github.com/aievolutionpl/agent-recorder/issues"
 	},
-	"private": true,
+	"private": false,
 	"version": "1.4.0",
 	"type": "module",
 	"scripts": {
